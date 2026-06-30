@@ -1,0 +1,739 @@
+---
+title: "Customer Response Prediction: Targeting ---
+title: "Customer Response Prediction: Targeting Telemarketing Campaigns"
+author: "Jean Liu"
+
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    code-fold: true
+    code-summary: "Show Code"
+    theme: cosmo
+    number-sections: true
+
+execute:
+  echo: true
+  warning: false
+  message: false
+
+editor: visual
+---
+
+# Customer Response Prediction
+
+## Business Context
+
+A bank runs telemarketing campaigns to promote term deposit accounts.
+
+Calling every customer is costly and inefficient. Instead of treating all customers equally, the bank wants to use historical campaign data to identify customers who are more likely to respond positively.
+
+A predictive model can help the marketing team prioritize customers, improve campaign efficiency, and reduce unnecessary outreach.
+
+## Business Question
+
+**Which customers are most likely to respond to a marketing campaign?**
+
+This project uses customer and campaign information to predict whether a customer will subscribe to a term deposit.
+
+The goal is not only to build a predictive model, but also to translate model scores into a practical customer targeting strategy.
+
+## Analytical Workflow
+
+The project follows a business-oriented predictive analytics workflow:
+
+1. Define the business context and question
+2. Understand the data
+3. Check for data leakage
+4. Explore customer response patterns
+5. Engineer features for modeling
+6. Build a baseline logistic regression model
+7. Evaluate model performance
+8. Rank customers by predicted response probability
+9. Recommend a customer targeting strategy
+
+# Setup
+
+```{r}
+library(tidyverse)
+library(janitor)
+library(scales)
+library(broom)
+library(pROC)
+
+set.seed(123)
+```
+
+# Data Loading
+
+```{r}
+bank <- read_csv("data/Bank Case.csv") |>
+  clean_names()
+
+glimpse(bank)
+```
+
+# Data Leakage Check
+
+The dataset includes a variable called `duration`, which measures the length of the phone call.
+
+However, this variable would not be known before the bank decides whom to call. If we include `duration` in the model, the model would use information that is only available after the campaign interaction has already happened.
+
+Therefore, `duration` should be removed before modeling.
+
+```{r}
+bank_model <- bank |>
+  select(-duration) |>
+  mutate(
+    y = factor(y, levels = c("no", "yes"))
+  )
+
+glimpse(bank_model)
+```
+
+# Data Understanding
+
+```{r}
+bank_model |>
+summarise(
+  Customers = n(),
+  Features = ncol(bank_model)-1,
+  Positive = sum(y=="yes"),
+  Negative = sum(y=="no"),
+  response_rate = percent(mean(y=="yes"))
+)
+```
+
+The dataset contains 41,188 historical telemarketing records.
+
+Each observation represents one customer contacted during a marketing campaign.
+
+The target variable (`y`) indicates whether the customer subscribed to a term deposit.
+
+Key dataset characteristics:
+
+• 41,188 customers
+
+• 10 predictor variables (after removing data leakage)
+
+• Binary classification problem
+
+• Positive response rate: 11.3%
+
+The relatively low response rate indicates a moderately imbalanced classification problem, making customer prioritization an important business objective.
+
+## Target Variable
+
+The target variable is `y`.
+
+* `yes`: the customer subscribed to the term deposit
+* `no`: the customer did not subscribe
+
+Because the business goal is to identify likely responders, this is a binary classification problem.
+
+# Exploratory Data Analysis
+
+The overall response rate is 11.3%, meaning that most contacted customers did not subscribe to the term deposit. This confirms that the campaign has a low baseline conversion rate and that customer prioritization is important.
+
+Age shows a non-linear response pattern. Customers older than 65 have the highest response rate, while customers between 35 and 55 respond at relatively lower rates. Younger customers under 25 also show above-average response rates.
+
+Occupation is also strongly associated with response. Students and retired customers have the highest response rates, while blue-collar, services, and entrepreneur customers have lower response rates.
+
+These patterns suggest that both demographic characteristics and life-stage indicators may be useful predictors for customer response.
+
+## Overall Response Distribution
+
+```{r}
+response_summary <- bank_model |>
+  count(y) |>
+  mutate(
+    pct = n / sum(n)
+  )
+
+response_summary
+```
+
+```{r}
+ggplot(response_summary,
+       aes(x = y,
+           y = n,
+           fill = y)) +
+  geom_col(width = 0.6) +
+  geom_text(
+    aes(label = scales::percent(pct)),
+    vjust = -0.4,
+    size = 5
+  ) +
+  scale_y_continuous(labels = comma) +
+  labs(
+    title = "Customer Response Distribution",
+    x = NULL,
+    y = "Number of Customers"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "none"
+  )
+```
+
+Most customers did not subscribe to the term deposit, with only 11.3% responding positively. This indicates a moderately imbalanced classification problem where accurately identifying likely responders is more valuable than contacting every customer.
+
+## Response Rate by Age
+
+```{r}
+age_summary <- bank_model |>
+  mutate(
+    age_group = cut(
+      age,
+      breaks = c(15,25,35,45,55,65,100),
+      include.lowest = TRUE
+    )
+  ) |>
+  group_by(age_group) |>
+  summarise(
+    Customers = n(),
+    Response_Rate = mean(y=="yes"),
+    .groups="drop"
+  )
+
+age_summary
+```
+
+```{r}
+ggplot(
+  age_summary,
+  aes(age_group,Response_Rate)
+)+
+geom_col()+
+scale_y_continuous(labels=percent)+
+labs(
+  title="Response Rate by Age Group",
+  x="Age Group",
+  y="Response Rate"
+)+
+theme_minimal()
+```
+
+Older customers exhibit higher response rates than younger customers, suggesting that age may be an important predictor of campaign success.
+
+## Response Rate by Job
+
+```{r}
+job_summary <-
+bank_model |>
+group_by(job) |>
+summarise(
+  Customers=n(),
+  Response_Rate=mean(y=="yes"),
+  .groups="drop"
+)|>
+arrange(desc(Response_Rate))
+
+job_summary
+```
+
+```{r}
+ggplot(
+job_summary,
+aes(
+reorder(job,Response_Rate),
+Response_Rate
+)
+)+
+geom_col()+
+coord_flip()+
+scale_y_continuous(labels=percent)+
+labs(
+title="Response Rate by Occupation",
+x=NULL,
+y="Response Rate"
+)+
+theme_minimal()
+```
+
+Retired customers and students tend to respond at higher rates than other occupation groups, indicating that occupation may provide useful information for customer targeting.
+
+## Response Rate by Marital Status
+
+```{r}
+marital_summary <- bank_model |>
+  group_by(marital) |>
+  summarise(
+    Customers = n(),
+    Response_Rate = mean(y == "yes"),
+    .groups = "drop"
+  ) |>
+  arrange(desc(Response_Rate))
+
+marital_summary
+```
+
+```{r}
+ggplot(
+  marital_summary,
+  aes(
+    x = reorder(marital, Response_Rate),
+    y = Response_Rate
+  )
+) +
+  geom_col() +
+  coord_flip() +
+  scale_y_continuous(labels = percent) +
+  labs(
+    title = "Response Rate by Marital Status",
+    x = NULL,
+    y = "Response Rate"
+  ) +
+  theme_minimal()
+```
+
+## Response Rate by Contact Method
+
+```{r}
+contact_summary <- bank_model |>
+  group_by(contact) |>
+  summarise(
+    Customers = n(),
+    Response_Rate = mean(y == "yes"),
+    .groups = "drop"
+  ) |>
+  arrange(desc(Response_Rate))
+
+contact_summary
+```
+
+```{r}
+ggplot(
+  contact_summary,
+  aes(
+    x = reorder(contact, Response_Rate),
+    y = Response_Rate
+  )
+) +
+  geom_col() +
+  scale_y_continuous(labels = percent) +
+  labs(
+    title = "Response Rate by Contact Method",
+    x = "Contact Method",
+    y = "Response Rate"
+  ) +
+  theme_minimal()
+```
+
+## Response Rate by Campaign Month
+
+```{r}
+month_summary <- bank_model |>
+  group_by(month) |>
+  summarise(
+    Customers = n(),
+    Response_Rate = mean(y == "yes"),
+    .groups = "drop"
+  ) |>
+  arrange(desc(Response_Rate))
+
+month_summary
+```
+
+```{r}
+ggplot(
+  month_summary,
+  aes(
+    x = reorder(month, Response_Rate),
+    y = Response_Rate
+  )
+) +
+  geom_col() +
+  scale_y_continuous(labels = percent) +
+  labs(
+    title = "Response Rate by Campaign Month",
+    x = "Month",
+    y = "Response Rate"
+  ) +
+  theme_minimal()
+```
+
+## Response Rate by Day of Week
+
+```{r}
+day_summary <- bank_model |>
+  group_by(day_of_week) |>
+  summarise(
+    Customers = n(),
+    Response_Rate = mean(y == "yes"),
+    .groups = "drop"
+  ) |>
+  arrange(desc(Response_Rate))
+
+day_summary
+```
+
+```{r}
+ggplot(
+  day_summary,
+  aes(
+    x = reorder(day_of_week, Response_Rate),
+    y = Response_Rate
+  )
+) +
+  geom_col() +
+  scale_y_continuous(labels = percent) +
+  labs(
+    title = "Response Rate by Day of Week",
+    x = "Day of Week",
+    y = "Response Rate"
+  ) +
+  theme_minimal()
+```
+
+## EDA Business Takeaways
+
+The exploratory analysis suggests several important targeting signals:
+
+- Customer response is uneven across demographic groups.
+- Students and retired customers show noticeably higher response rates.
+- Age has a non-linear relationship with response.
+- Contact method and campaign timing may be important predictors.
+- Since the response rate is low overall, model-based customer prioritization is more useful than broad outreach.
+
+These findings support the use of a predictive model to rank customers by response probability.
+
+# Feature Engineering
+
+Before modeling, categorical variables are converted into factors. This allows the logistic regression model to treat them as categorical predictors instead of plain text fields.
+
+```{r}
+bank_model <- bank_model |>
+  mutate(
+    across(
+      c(job, marital, education, default, housing, loan, contact, month, day_of_week),
+      as.factor
+    )
+  )
+```
+
+# Train/Test Split
+
+The dataset is split into training and testing sets.
+
+The training set is used to fit the model, while the testing set is held out for evaluating predictive performance on unseen data.
+
+```{r}
+set.seed(123)
+
+train_index <- sample(
+  1:nrow(bank_model),
+  size = 0.8 * nrow(bank_model)
+)
+
+train_data <- bank_model[train_index, ]
+test_data <- bank_model[-train_index, ]
+
+train_data |>
+  count(y) |>
+  mutate(pct = percent(n / sum(n)))
+
+test_data |>
+  count(y) |>
+  mutate(pct = percent(n / sum(n)))
+```
+
+# Baseline Logistic Regression Model
+
+Logistic regression is used as the baseline model because the target variable is binary and the model is easy to interpret.
+
+In a marketing analytics setting, interpretability is important because business teams need to understand which customer characteristics are associated with higher response probability.
+
+```{r}
+log_model <- glm(
+  y ~ .,
+  data = train_data,
+  family = binomial(link = "logit")
+)
+
+summary(log_model)
+```
+
+# Predict Customer Response
+
+```{r}
+pred_prob <- predict(
+  log_model,
+  newdata = test_data,
+  type = "response"
+)
+
+pred_class <- ifelse(
+  pred_prob >= 0.5,
+  "yes",
+  "no"
+)
+
+pred_class <- factor(
+  pred_class,
+  levels = c("no", "yes")
+)
+
+prediction_results <- tibble(
+  Actual = test_data$y,
+  Predicted_Probability = pred_prob,
+  Predicted_Class = pred_class
+)
+
+prediction_results |>
+  slice_head(n = 10)
+```
+
+# Model Evaluation
+
+After generating predicted probabilities and predicted classes, the next step is to compare predictions against actual customer responses in the test set.
+
+```{r}
+evaluation_data <- tibble(
+  actual = test_data$y,
+  predicted_class = pred_class,
+  predicted_probability = pred_prob
+)
+
+head(evaluation_data)
+```
+
+## Confusion Matrix
+
+```{r}
+confusion_matrix <- table(
+  Actual = evaluation_data$actual,
+  Predicted = evaluation_data$predicted_class
+)
+
+confusion_matrix
+```
+
+## Accuracy
+
+```{r}
+accuracy <- mean(
+  evaluation_data$actual == evaluation_data$predicted_class
+)
+
+accuracy
+```
+
+## Precision and Recall
+
+```{r}
+true_positive <- confusion_matrix["yes", "yes"]
+false_positive <- confusion_matrix["no", "yes"]
+false_negative <- confusion_matrix["yes", "no"]
+
+precision <- true_positive / (true_positive + false_positive)
+recall <- true_positive / (true_positive + false_negative)
+
+tibble(
+  Metric = c("Accuracy", "Precision", "Recall"),
+  Value = c(accuracy, precision, recall)
+)
+```
+
+## Business Interpretation
+
+Accuracy alone is not enough for this problem because most customers do not respond.
+
+For a marketing campaign, precision and recall are more useful:
+
+- Precision tells us how many predicted responders actually responded.
+- Recall tells us how many actual responders the model successfully captured.
+
+Since the goal is customer targeting, the model should be evaluated not only as a classifier, but also as a ranking tool.
+
+# ROC Curve and AUC
+
+ROC AUC evaluates how well the model separates responders from non-responders across different probability thresholds.
+
+```{r}
+roc_obj <- pROC::roc(
+  response = evaluation_data$actual,
+  predictor = evaluation_data$predicted_probability,
+  levels = c("no", "yes"),
+  direction = "<"
+)
+
+auc_value <- pROC::auc(roc_obj)
+
+auc_value
+```
+
+```{r}
+plot(
+  roc_obj,
+  main = "ROC Curve: Customer Response Prediction",
+  col = "steelblue",
+  lwd = 2
+)
+
+abline(
+  a = 0,
+  b = 1,
+  lty = 2,
+  col = "gray"
+)
+```
+
+**Business Interpretation**
+
+A higher AUC means the model is better at ranking likely responders above unlikely responders.
+
+For this project, AUC is more useful than accuracy because the business goal is not simply to classify every customer correctly. The goal is to prioritize customers by response likelihood.
+
+# Customer Ranking
+
+Instead of using the model only as a yes/no classifier, the bank can use predicted probabilities to rank customers.
+
+Customers with higher predicted probabilities should be prioritized for outreach.
+
+```{r}
+ranked_customers <- evaluation_data |>
+  mutate(
+    customer_id = row_number(),
+    actual_response = actual == "yes"
+  ) |>
+  arrange(desc(predicted_probability)) |>
+  mutate(
+    rank = row_number(),
+    percentile = rank / n()
+  )
+
+ranked_customers |>
+  select(
+    customer_id,
+    actual,
+    predicted_probability,
+    rank,
+    percentile
+  ) |>
+  slice_head(n = 10)
+```
+
+# Top Decile Analysis
+
+The test set is divided into ten groups based on predicted response probability.
+
+Decile 1 contains the customers with the highest predicted response probability. Decile 10 contains the customers with the lowest predicted response probability.
+
+```{r}
+decile_summary <- ranked_customers |>
+  mutate(
+    decile = ntile(desc(predicted_probability), 10)
+  ) |>
+  group_by(decile) |>
+  summarise(
+    Customers = n(),
+    Average_Predicted_Probability = mean(predicted_probability),
+    Actual_Response_Rate = mean(actual_response),
+    Actual_Responses = sum(actual_response),
+    .groups = "drop"
+  )
+
+decile_summary
+```
+
+```{r}
+ggplot(
+  decile_summary,
+  aes(
+    x = factor(decile),
+    y = Actual_Response_Rate
+  )
+) +
+  geom_col() +
+  scale_y_continuous(labels = percent) +
+  labs(
+    title = "Actual Response Rate by Predicted Probability Decile",
+    x = "Prediction Decile",
+    y = "Actual Response Rate"
+  ) +
+  theme_minimal()
+```
+
+**Business Interpretation**
+
+If the model is useful for targeting, the top deciles should have higher actual response rates than the lower deciles.
+
+This analysis shows whether the model can help the bank prioritize customers more effectively than random outreach.
+
+# Campaign Targeting Simulation
+
+Assume the bank can only call the top 2,000 customers in the test set.
+
+The model-based strategy prioritizes customers with the highest predicted response probability. The random strategy represents calling customers without a predictive model.
+
+```{r}
+n_calls <- 2000
+
+model_targeting <- ranked_customers |>
+  slice_head(n = n_calls)
+
+model_responses <- sum(model_targeting$actual_response)
+
+random_response_rate <- mean(evaluation_data$actual == "yes")
+
+random_expected_responses <- random_response_rate * n_calls
+
+targeting_lift <- model_responses / random_expected_responses
+
+targeting_summary <- tibble(
+  Strategy = c("Random Targeting", "Model-Based Targeting"),
+  Customers_Called = c(n_calls, n_calls),
+  Expected_Responses = c(random_expected_responses, model_responses),
+  Response_Rate = c(random_response_rate, model_responses / n_calls),
+  Lift_vs_Random = c(1, targeting_lift)
+)
+
+targeting_summary
+```
+
+```{r}
+ggplot(
+  targeting_summary,
+  aes(
+    x = Strategy,
+    y = Expected_Responses
+  )
+) +
+  geom_col() +
+  labs(
+    title = "Expected Responses: Random vs Model-Based Targeting",
+    x = NULL,
+    y = "Expected Number of Responses"
+  ) +
+  theme_minimal()
+```
+
+# Business Recommendation
+
+The model should be used as a customer prioritization tool rather than a simple yes/no classifier.
+
+Because the overall response rate is low, contacting all customers is inefficient. The bank should rank customers by predicted response probability and focus outreach on the highest-scoring segments.
+
+Recommended targeting strategy:
+
+- Prioritize customers in the top prediction deciles.
+- Use predicted probability as a customer ranking score.
+- Avoid relying on the default 0.5 classification threshold, since it produces low recall.
+- Track campaign response rate by model score band after deployment.
+- Retrain the model periodically as customer behavior and campaign conditions change.
+
+# Management Takeaway
+
+The predictive model helps the bank move from broad telemarketing outreach to targeted campaign execution.
+
+Instead of asking:
+
+> Should we call every customer?
+
+the bank can ask:
+
+> Which customers should we call first?
+
+This makes the model directly useful for campaign prioritization, customer acquisition, and marketing efficiency.
+
