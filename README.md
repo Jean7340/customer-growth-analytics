@@ -23,7 +23,7 @@ This repository explores questions such as:
 
 | Project | Business Question | Methods | Deliverables |
 |----------|-------------------|---------|-------|
-| Marketing Incrementality | Did marketing campaigns generate incremental sales? | Geo Experiments, Incrementality Analysis, Difference-in-Differences | [View Report](output/01_marketing_incrementality.html) |
+| Marketing Incrementality | Did marketing campaigns generate incremental sales? | Geo Experiments, Difference-in-Differences, Causal Inference | [View Report](output/01_marketing_incrementality.html) |
 | Customer Response Prediction | Which customers are most likely to respond? | Classification, Feature Engineering, Model Evaluation | HTML Report |
 | Facebook Advertising Performance Analysis | Which advertising strategies perform best? | Exploratory Data Analysis, Marketing Analytics, KPI Analysis | HTML Report |
 
