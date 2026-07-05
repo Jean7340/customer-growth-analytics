@@ -1,62 +1,71 @@
 # Customer Growth Analytics
 
-Business analytics case studies focused on customer behavior, marketing effectiveness, campaign optimization, and data-driven growth decisions.
+> Business analytics case studies focused on customer behavior, marketing effectiveness, campaign optimization, and data-driven growth decisions.
 
----
+This repository contains end-to-end customer and growth analytics case studies focused on marketing effectiveness, customer behavior, and campaign optimization.
 
-## Overview
-
-This repository contains end-to-end analytics projects that demonstrate how data can support customer acquisition, campaign optimization, and marketing performance evaluation.
-
-Across these projects, I apply statistical analysis, predictive modeling, experimentation, and business analytics to answer practical business questions and generate actionable recommendations.
+The projects demonstrate how analytics supports business decisions from problem definition to actionable recommendations.
 
 ---
 
 ## Business Questions
 
-The projects in this repository explore questions such as:
+This repository explores questions such as:
 
-- Which marketing campaigns create measurable incremental impact?
-- Which customers are most likely to respond to a campaign?
-- Which advertising strategies generate the strongest performance?
+- Which marketing activities generate incremental business value?
+- Which customers are most likely to respond?
+- Which advertising strategies improve campaign performance?
 - How can marketing resources be allocated more effectively?
 
 ---
 
 ## Projects
 
-| Project | Business Question | Methods | Tools |
+| Project | Business Question | Methods | Deliverables |
 |----------|-------------------|---------|-------|
-| Marketing Incrementality | Did marketing campaigns generate incremental sales? | Geo Experiments, Incrementality Analysis, Marketing Mix Modeling | R |
-| Customer Response Prediction | Which customers are most likely to respond? | Classification, Feature Engineering, Model Evaluation | Python |
-| Facebook Advertising Performance Analysis | Which advertising strategies perform best? | Exploratory Data Analysis, Marketing Analytics, KPI Analysis | Python |
+| Marketing Incrementality | Did marketing campaigns generate incremental sales? | Geo Experiments, Incrementality Analysis, Marketing Mix Modeling | HTML Report |
+| Customer Response Prediction | Which customers are most likely to respond? | Classification, Feature Engineering, Model Evaluation | HTML Report |
+| Facebook Advertising Performance Analysis | Which advertising strategies perform best? | Exploratory Data Analysis, Marketing Analytics, KPI Analysis | HTML Report |
 
 ---
 
-## Skills Demonstrated
+## Analytics Workflow
 
-### Business Analytics
+Every project follows a consistent analytics workflow:
 
-- Customer Analytics
-- Marketing Analytics
-- Growth Analytics
-- Campaign Performance Measurement
-- Business Recommendations
+1. Define the business problem
+2. Explore and prepare the data
+3. Build analytical models
+4. Evaluate results
+5. Generate business recommendations
 
-### Statistical Analysis
+---
 
-- A/B Testing
+## Featured Projects
+
+### Marketing Incrementality
+
+Measure whether marketing investment generated true incremental revenue rather than existing demand.
+
+**Highlights**
+
+- Geo Experiment
+- Marketing Mix Modeling
 - Incrementality Analysis
-- Regression
-- Predictive Modeling
 
-### Technical Skills
+➡️ View Report
+
+---
+
+## Tools & Technologies
 
 - Python
 - R
-- SQL
 - Quarto
 - Jupyter Notebook
+- Scikit-learn
+- pandas
+- ggplot2
 
 ---
 
