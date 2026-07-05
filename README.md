@@ -45,15 +45,13 @@ Every project follows a consistent analytics workflow:
 
 ### Marketing Incrementality Analysis
 
-Evaluated whether a regional advertising campaign generated **incremental revenue** using a geo experiment.
+A retailer wanted to understand whether a regional advertising campaign actually generated incremental revenue or simply captured demand that would have occurred anyway. I designed a geo-based experiment and used Difference-in-Differences analysis to estimate the campaign's causal impact. Although revenue declined in both treatment and control markets at similar rates, the analysis showed no statistically significant incremental lift, leading to a recommendation against scaling the campaign in its current form.
 
-**Business Question:** Did the campaign create measurable incremental lift?
+<p align="center">
+  <img src="figures/Revenue Trends by Market.png" width="700">
+</p>
 
-**Methods:** Geo Experiment · Difference-in-Differences (DiD) · Causal Inference
 
-**Outcome:** No statistically significant incremental lift was detected; recommended refining targeting and campaign strategy before scaling investment.
-
-📄 [View Full Report](01_marketing_incrementality/01_marketing_incrementality.html)
 
 ---
 
