@@ -23,7 +23,7 @@ This repository explores questions such as:
 
 | Project | Business Question | Methods | Deliverables |
 |----------|-------------------|---------|-------|
-| Marketing Incrementality | Did marketing campaigns generate incremental sales? | Geo Experiments, Incrementality Analysis, Marketing Mix Modeling | HTML Report |
+| Marketing Incrementality | Did marketing campaigns generate incremental sales? | Geo Experiments, Incrementality Analysis, Marketing Mix Modeling | [View Report](output/01_marketing_incrementality.html) |
 | Customer Response Prediction | Which customers are most likely to respond? | Classification, Feature Engineering, Model Evaluation | HTML Report |
 | Facebook Advertising Performance Analysis | Which advertising strategies perform best? | Exploratory Data Analysis, Marketing Analytics, KPI Analysis | HTML Report |
 
@@ -43,17 +43,17 @@ Every project follows a consistent analytics workflow:
 
 ## Featured Projects
 
-### Marketing Incrementality
+### Marketing Incrementality Analysis
 
-Measure whether marketing investment generated true incremental revenue rather than existing demand.
+Evaluated whether a regional advertising campaign generated **incremental revenue** using a geo experiment.
 
-**Highlights**
+**Business Question:** Did the campaign create measurable incremental lift?
 
-- Geo Experiment
-- Marketing Mix Modeling
-- Incrementality Analysis
+**Methods:** Geo Experiment · Difference-in-Differences (DiD) · Causal Inference
 
-➡️ View Report
+**Outcome:** No statistically significant incremental lift was detected; recommended refining targeting and campaign strategy before scaling investment.
+
+📄 [View Full Report](01_marketing_incrementality/01_marketing_incrementality.html)
 
 ---
 
