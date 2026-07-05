@@ -25,7 +25,7 @@ This repository explores questions such as:
 |----------|-------------------|---------|-------|
 | Advertising Performance Analysis | Which advertising strategies perform best? | Exploratory Data Analysis, Marketing Analytics, KPI Analysis | HTML Report |
 | Marketing Incrementality | Did marketing campaigns generate incremental sales? | Geo Experiments, Difference-in-Differences, Causal Inference | [View Report](output/01_marketing_incrementality.html) |
-| Customer Response Prediction | Which customers are most likely to respond? | Classification, Feature Engineering, Model Evaluation | [View Report](output/02_customer_response_prediction.html) |
+| Customer Response Prediction | Which customers are most likely to respond? | Classification, Predictive Modeling, Campaign Targeting | [View Report](output/02_customer_response_prediction.html) |
 
 ---
 
