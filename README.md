@@ -23,9 +23,9 @@ This repository explores questions such as:
 
 | Project | Business Question | Methods | Deliverables |
 |----------|-------------------|---------|-------|
+| Advertising Performance Analysis | Which advertising strategies perform best? | Exploratory Data Analysis, Marketing Analytics, KPI Analysis | HTML Report |
 | Marketing Incrementality | Did marketing campaigns generate incremental sales? | Geo Experiments, Difference-in-Differences, Causal Inference | [View Report](output/01_marketing_incrementality.html) |
-| Customer Response Prediction | Which customers are most likely to respond? | Classification, Feature Engineering, Model Evaluation | HTML Report |
-| Facebook Advertising Performance Analysis | Which advertising strategies perform best? | Exploratory Data Analysis, Marketing Analytics, KPI Analysis | HTML Report |
+| Customer Response Prediction | Which customers are most likely to respond? | Classification, Feature Engineering, Model Evaluation | [View Report](output/02_customer_response_prediction.html) |
 
 ---
 
@@ -51,7 +51,15 @@ A retailer wanted to know whether its regional advertising campaign actually dro
   <img src="figures/Revenue Trends by Market.png" width="700">
 </p>
 
+### Customer Response Prediction
 
+A bank wanted to improve the efficiency of its telemarketing campaigns by identifying customers who were most likely to subscribe to a term deposit. Using historical campaign data, I developed a predictive targeting model that ranked customers by their likelihood of responding and translated model predictions into a practical targeting strategy. By prioritizing high-propensity customers instead of contacting everyone, the analysis demonstrated how predictive analytics can improve campaign efficiency and marketing resource allocation.
+
+<p align="center">
+  <img src="figures/campaign_targeting_simulation.png"
+       alt="Campaign Targeting Simulation"
+       width="900">
+</p>
 
 ---
 
