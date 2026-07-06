@@ -23,9 +23,9 @@ This repository explores questions such as:
 
 | Project | Business Question | Methods | Deliverables |
 |----------|-------------------|---------|-------|
-| Advertising Performance Analysis | Which advertising strategies perform best? | Exploratory Data Analysis, Marketing Analytics, KPI Analysis | HTML Report |
-| Marketing Incrementality | Did marketing campaigns generate incremental sales? | Geo Experiments, Difference-in-Differences, Causal Inference | [View Report](output/01_marketing_incrementality.html) |
-| Customer Response Prediction | Which customers are most likely to respond? | Classification, Predictive Modeling, Campaign Targeting | [View Report](output/02_customer_response_prediction.html) |
+| Advertising Performance Analysis | Which advertising strategies drive better campaign performance? | Exploratory Data Analysis, Performance Analysis, Multiple Linear Regression | HTML Report |
+| Marketing Incrementality | Did marketing campaigns generate incremental sales? | Geo Experiments, Difference-in-Differences, Causal Inference | [View Report](output/02_marketing_incrementality.html) |
+| Customer Response Prediction | Which customers are most likely to respond? | Classification, Predictive Modeling, Campaign Targeting | [View Report](output/03_customer_response_prediction.html) |
 
 ---
 
@@ -42,6 +42,12 @@ Every project follows a consistent analytics workflow:
 ---
 
 ## Featured Projects
+
+### Advertising Performance Analysis
+
+This project evaluates how placement, ad format, retail category, creative messaging, and audience characteristics influence advertising performance. Using exploratory data analysis, ANOVA, and regression analysis, I found that advertising efficiency varies across campaign attributes, with placement and creative characteristics remaining important predictors after controlling for other factors. The findings were translated into recommendations for campaign optimization.
+
+
 
 ### Marketing Incrementality Analysis
 
