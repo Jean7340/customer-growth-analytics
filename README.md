@@ -92,16 +92,3 @@ customer-growth-analytics/
 ├── 03_facebook_advertising_performance_analysis/
 └── images/
 ```
-
----
-
-## Key Takeaways
-
-Across these projects, the focus is not only on building analytical models, but also on translating analytical findings into business decisions.
-
-The analyses emphasize:
-
-- Defining business problems
-- Selecting appropriate analytical methods
-- Interpreting results
-- Communicating actionable recommendations
