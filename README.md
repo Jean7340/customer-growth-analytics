@@ -2,7 +2,9 @@
 
 > Business analytics case studies focused on customer behavior, marketing effectiveness, campaign optimization, and data-driven growth decisions.
 
-Marketing growth decisions rarely depend on a single analysis. Organizations need to understand whether marketing investments generate real business value, identify which customers are most likely to respond, and determine which campaign strategies deliver the strongest performance. 
+Marketing growth decisions rarely depend on a single analysis. 
+
+Organizations need to understand whether marketing investments generate real business value, identify which customers are most likely to respond, and determine which campaign strategies deliver the strongest performance. 
 
 This repository brings together three complementary analytics case studies that address these questions through causal inference, predictive modeling, and marketing performance analysis, illustrating how data can support business decisions from campaign evaluation to resource allocation and optimization.
 
