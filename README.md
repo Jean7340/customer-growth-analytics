@@ -49,7 +49,7 @@ This project evaluates how placement, ad format, retail category, creative messa
 
 <p align="center">
   <img src="figures/campaign_attributes_click_efficiency.png"
-       alt="Campaign Targeting Simulation"
+       alt="Campaign Attributes Click Efficiency"
        width="900">
 </p>
 
@@ -58,7 +58,9 @@ This project evaluates how placement, ad format, retail category, creative messa
 A retailer wanted to know whether its regional advertising campaign actually drove incremental revenue. Using data from a geo-based experiment, I compared treatment and control markets with Difference-in-Differences analysis to separate campaign impact from underlying market trends. The results indicated no statistically significant incremental lift, providing evidence against scaling the campaign in its current form.
 
 <p align="center">
-  <img src="figures/Revenue Trends by Market.png" width="700">
+  <img src="figures/revenue_trends_by_market.png"
+       alt="Revenue Trends by Market"
+       width="900">
 </p>
 
 ### Customer Response Prediction
