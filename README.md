@@ -63,6 +63,8 @@ A retailer wanted to know whether its regional advertising campaign actually dro
        width="900">
 </p>
 
+https://jean7340.github.io/customer-growth-analytics/02_marketing_incrementality.html
+
 ### Customer Response Prediction
 
 A bank wanted to improve the efficiency of its telemarketing campaigns by identifying customers who were most likely to subscribe to a term deposit. Using historical campaign data, I developed a predictive targeting model that ranked customers by their likelihood of responding and translated model predictions into a practical targeting strategy. By prioritizing high-propensity customers instead of contacting everyone, the analysis demonstrated how predictive analytics can improve campaign efficiency and marketing resource allocation.
