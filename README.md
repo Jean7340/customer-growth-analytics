@@ -2,9 +2,7 @@
 
 > Business analytics case studies focused on customer behavior, marketing effectiveness, campaign optimization, and data-driven growth decisions.
 
-This repository contains end-to-end customer and growth analytics case studies focused on marketing effectiveness, customer behavior, and campaign optimization.
-
-The projects demonstrate how analytics supports business decisions from problem definition to actionable recommendations.
+Marketing growth decisions rarely depend on a single analysis. Organizations need to understand whether marketing investments generate real business value, identify which customers are most likely to respond, and determine which campaign strategies deliver the strongest performance. This repository brings together three complementary analytics case studies that address these questions through causal inference, predictive modeling, and marketing performance analysis, illustrating how data can support business decisions from campaign evaluation to resource allocation and optimization.
 
 ---
 
