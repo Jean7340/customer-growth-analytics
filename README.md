@@ -91,10 +91,12 @@ A bank wanted to improve the efficiency of its telemarketing campaigns by identi
 
 ```text
 customer-growth-analytics/
-│
-├── README.md
-├── 01_marketing_incrementality/
-├── 02_customer_response_prediction/
-├── 03_facebook_advertising_performance_analysis/
-└── images/
+
+├── data/
+├── figures/
+├── notebooks/
+├── output/
+└── README.md
+
+Analysis notebooks, figures, and generated reports are organized separately for reproducibility and easier navigation.
 ```
