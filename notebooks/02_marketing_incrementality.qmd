@@ -1,0 +1,365 @@
+---
+title: "Campaign Effectiveness Analysis: Measuring Incremental Revenue with a Geo Experiment"
+author: "Jean Liu"
+
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    code-fold: true
+    code-summary: "Show Code"
+    theme: cosmo
+
+execute:
+  warning: false
+  message: false
+---
+
+# Business Context
+
+A retailer launched a regional marketing campaign to evaluate whether advertising generated incremental revenue.
+
+The campaign was tested through a geo-based experiment using Designated Market Areas (DMAs). Some markets were assigned to a treatment group, while others served as a control group.
+
+This analysis estimates the causal impact of the campaign and evaluates whether the marketing investment should be scaled.
+
+# Business Question
+
+Did the advertising campaign generate incremental revenue? 
+
+More specifically,
+
+- Was revenue growth driven by advertising?
+- Or were treatment markets already larger before the campaign?
+
+Answering this question is critical for determining whether the campaign should be scaled, modified, or discontinued.
+
+## Executive Summary
+
+```{r}
+library(tidyverse)
+library(knitr)
+library(tibble)
+library(broom)
+
+executive_summary <- tibble(
+  Finding = c(
+    "No Incremental Lift",
+    "Balanced Experiment",
+    "Recommendation"
+  ),
+  Evidence = c(
+    "DiD interaction p = 0.845",
+    "Pre-campaign balance p = 0.570",
+    "No statistically significant campaign effect"
+  ),
+  `Business Impact` = c(
+    "Advertising did not generate measurable incremental revenue.",
+    "Treatment and control markets were comparable before the campaign.",
+    "Do not scale the campaign; test alternative targeting, creatives, or media channels."
+  )
+)
+
+kable(
+  executive_summary,
+  caption = "Executive Summary"
+)
+```
+
+# Experimental Design
+
+The campaign was implemented as a geo experiment.
+
+Selected Designated Market Areas (DMAs) received advertising, while comparable DMAs served as a control group.
+
+Revenue was observed before and after the campaign.
+
+The analysis estimates advertising incrementality by comparing revenue changes across treatment and control markets rather than relying on raw revenue differences.
+
+> Analysis workflow
+
+```{mermaid}
+flowchart LR
+    A[Geo Experiment]
+    B[Data Preparation]
+    C[Baseline Comparison]
+    D[Naive Before-After]
+    E[Incrementality Estimation]
+    F[Business Recommendation]
+
+    A --> B --> C --> D --> E --> F
+```
+
+# Data Preparation
+
+```{r}
+campaign <- read_csv("../data/Date of Advertising.csv")
+
+campaign <- campaign |>
+  mutate(
+    date = as.Date(date, format = "%m/%d/%Y"),
+
+    period = factor(
+      isTreatmentPeriod,
+      levels = c(0, 1),
+      labels = c("Before", "After")
+    ),
+
+    group = factor(
+      isTreatmentGroup,
+      levels = c(0, 1),
+      labels = c("Control", "Treatment")
+    )
+  )
+
+summary_table <- campaign |>
+  group_by(group, period) |>
+  summarise(
+    n_observations = n(),
+    n_dmas = n_distinct(dma),
+    avg_revenue = mean(revenue),
+    median_revenue = median(revenue),
+    total_revenue = sum(revenue),
+    .groups = "drop"
+  )
+
+summary_table |>
+  rename(
+    Group = group,
+    Period = period,
+    Observations = n_observations,
+    DMAs = n_dmas,
+    `Average Revenue` = avg_revenue,
+    `Median Revenue` = median_revenue,
+    `Total Revenue` = total_revenue
+  ) |>
+  kable(
+    digits = 0,
+    caption = "Campaign Summary by Group and Period"
+  )
+```
+
+The dataset contains observations from both treatment and control markets across pre- and post-campaign periods, providing the foundation for estimating incremental advertising impact.
+
+# Baseline Comparison
+
+Before estimating campaign impact, we need to check whether treatment and control markets were comparable before the campaign.
+
+```{r}
+pre_period <- campaign |>
+  filter(period == "Before")
+
+ggplot(
+  pre_period,
+  aes(
+    x = log(revenue),
+    fill = group
+  )
+) +
+  geom_density(alpha = 0.35) +
+  scale_fill_manual(
+    values = c(
+      "Control" = "#9AA0A6",
+      "Treatment" = "#2563EB"
+    )
+  ) +
+  labs(
+    title = "Pre-Campaign Revenue Distribution",
+    subtitle = "Treatment and control markets showed similar baseline distributions",
+    x = "Log Revenue",
+    y = "Density",
+    fill = NULL
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    legend.position = "bottom",
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank(),
+    plot.title = element_text(face = "bold"),
+    plot.subtitle = element_text(color = "gray40")
+  )
+```
+
+Although treatment markets exhibited higher average revenue in raw values, the distribution of log-transformed revenue is broadly similar across groups. This observation is consistent with the formal balance check presented below.
+
+Because raw revenue levels differ across markets, comparing post-campaign revenue alone could lead to misleading conclusions. A formal pre-campaign balance check and a Difference-in-Differences model are therefore used to isolate the incremental effect of advertising.
+
+# Pre-Campaign Balance Check
+
+Before estimating campaign impact, we first check whether treatment and control markets were statistically similar during the pre-campaign period.
+
+```{r}
+randomization_model <- lm(
+  log(revenue) ~ group,
+  data = pre_period
+)
+
+tidy(randomization_model) |>
+  filter(term != "(Intercept)") |>
+  transmute(
+    Variable = "Treatment Group",
+    Estimate = round(estimate, 3),
+    `P-value` = round(p.value, 3)
+  ) |>
+  kable(
+    caption = "Pre-Campaign Balance Check"
+  )
+```
+
+No statistically significant baseline difference was detected between treatment and control markets (p = 0.570), supporting the validity of the experimental design.
+
+# Naive Before–After Estimate
+
+A common way to evaluate a marketing campaign is to compare revenue before and after the campaign within the treatment markets.
+
+However, this approach assumes that all observed changes are caused by the campaign, ignoring other factors such as seasonality, macroeconomic conditions, and overall market trends.
+
+The following regression estimates the average revenue difference before and after the campaign for treatment markets only.
+
+```{r}
+treatment <- campaign |>
+  filter(group == "Treatment")
+
+before_after_model <- lm(
+  log(revenue) ~ period,
+  data = treatment
+)
+
+tidy(before_after_model) |>
+  filter(term != "(Intercept)") |>
+  transmute(
+    Variable = "After Period",
+    Estimate = round(estimate, 3),
+    `P-value` = round(p.value, 3),
+    Interpretation = "Revenue declined within treatment markets"
+  ) |>
+  kable(
+    caption = "Naive Before–After Regression Results"
+  )
+```
+
+Although revenue declined after the campaign within treatment markets (β = -0.039, p = 0.047), this estimate cannot be interpreted as the causal effect of advertising because it does not control for broader market trends.
+
+# Incrementality Estimation
+
+```{r}
+campaign_trend <- campaign |>
+  group_by(group, period) |>
+  summarise(
+    avg_revenue = mean(revenue),
+    .groups = "drop"
+  )
+
+ggplot(
+  campaign_trend,
+  aes(
+    x = period,
+    y = avg_revenue,
+    group = group,
+    color = group
+  )
+) +
+  geom_line(linewidth = 1.4) +
+  geom_point(size = 4) +
+  scale_color_manual(
+    values = c(
+      "Control" = "#9AA0A6",
+      "Treatment" = "#2563EB"
+    )
+  ) +
+  scale_y_continuous(
+    labels = scales::comma,
+    limits = c(0, NA),
+    expand = expansion(mult = c(0, 0.05))
+  ) +
+  labs(
+    title = "Revenue Trends by Market",
+    subtitle = "Both groups declined at a similar rate after the campaign",
+    x = NULL,
+    y = "Average Revenue ($)",
+    color = NULL
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    legend.position = "bottom",
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank(),
+    plot.title = element_text(face = "bold"),
+    plot.subtitle = element_text(color = "gray40")
+  )
+```
+
+The figure suggests that treatment and control markets followed similar revenue trends over time. To formally estimate whether the campaign generated incremental revenue beyond these common trends, we apply a Difference-in-Differences (DiD) model.
+
+```{r}
+
+incrementality_model <- lm(
+  log(revenue) ~ isTreatmentGroup * isTreatmentPeriod,
+  data = campaign
+)
+
+results <- tidy(incrementality_model) |>
+  filter(term != "(Intercept)") |>
+  mutate(
+    Variable = c(
+      "Treatment",
+      "Post Period",
+      "Treatment × Post"
+    ),
+    Interpretation = c(
+      "No significant baseline difference",
+      "Overall revenue declined slightly",
+      "No significant incremental advertising effect"
+    )
+  ) |>
+  transmute(
+    Variable,
+    Estimate = round(estimate, 3),
+    `P-value` = round(p.value, 3),
+    Interpretation
+  )
+
+kable(
+  results,
+  caption = "Difference-in-Differences Regression Results"
+)
+```
+
+The trend plot suggests that treatment and control markets experienced similar revenue changes over time. The Difference-in-Differences model formally estimates whether the treatment markets experienced additional revenue growth beyond this common trend. The interaction term captures this incremental advertising effect.
+
+# Business Recommendation
+
+The Difference-in-Differences model found no statistically significant incremental advertising effect (β = 0.007, p = 0.845). Based on the current evidence, campaign expansion is not recommended.
+
+```{r}
+recommendation_table <- tibble(
+  Decision = c(
+    "Do not scale the campaign",
+    "Optimize targeting",
+    "Test new creatives or media channels"
+  ),
+  Rationale = c(
+    "No statistically significant incremental lift was detected.",
+    "Current treatment markets did not show additional growth versus control markets.",
+    "The current campaign setup may not be strong enough to generate measurable lift."
+  ),
+  `Recommended Action` = c(
+    "Avoid expanding media spend based on this experiment alone.",
+    "Run a follow-up geo experiment with refined audience segments.",
+    "Evaluate alternative creative assets, messaging, or channel allocation."
+  )
+)
+
+kable(
+  recommendation_table,
+  caption = "Business Recommendation"
+)
+```
+
+Overall, the current evidence does not support scaling the campaign. Future investment should be tied to follow-up experiments with clearer targeting, creative variation, and measurable lift criteria.
+
+# Limitations
+
+This analysis is based on a geo-level experiment, so the results may not generalize to all advertising campaigns.
+
+Potential limitations include market-level differences, seasonality, regional demand shocks, and the fact that results from one campaign or channel may not apply to other media strategies.

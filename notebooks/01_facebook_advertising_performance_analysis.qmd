@@ -1,0 +1,538 @@
+---
+title: "Facebook Advertising Performance Analysis"
+author: "Jean Liu"
+
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    code-fold: true
+    code-summary: "Show Code"
+    theme: cosmo
+
+execute:
+  warning: false
+  message: false
+---
+
+<style>
+table {
+  width: 65% !important;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
+
+# Project Overview
+
+This project analyzes Facebook advertising performance across 4,431 ads to identify which campaign attributes are associated with higher click efficiency.
+
+The core business question is:
+
+**Which advertising strategies generate more clicks per dollar, and how should budget and creative strategy be adjusted?**
+
+The analysis evaluates campaign performance across placement, ad type, creative message, retail category, and audience age. It combines exploratory analysis with regression modeling to separate surface-level performance differences from statistically significant performance drivers.
+
+```{r}
+#| label: setup
+#| include: false
+
+library(tidyverse)
+library(broom)
+library(scales)
+library(knitr)
+```
+
+```{r}
+# Load raw advertising dataset
+facebook <- read_csv("../data/Facebook Data.csv")
+
+facebook_clean <- facebook |>
+  select(-`...1`) |>
+  mutate(
+    date = as.Date(date, "%m/%d/%Y"),
+
+    adType = factor(adType),
+    placement = factor(placement),
+    category = factor(category),
+    keywords = factor(keywords),
+    body = factor(body)
+  )
+```
+
+# Data Audit
+
+Before conducting exploratory analysis and regression modeling, the dataset was reviewed to assess its completeness, structure, and suitability for analysis.
+
+```{r}
+#| echo: false
+
+audit_summary <- tibble(
+  Metric = c(
+    "Number of advertisements",
+    "Number of variables",
+    "Missing values",
+    "Retail categories",
+    "Ad formats",
+    "Placements"
+  ),
+  Value = c(
+    nrow(facebook_clean),
+    ncol(facebook_clean),
+    sum(is.na(facebook_clean)),
+    n_distinct(facebook_clean$category),
+    n_distinct(facebook_clean$adType),
+    n_distinct(facebook_clean$placement)
+  )
+)
+
+knitr::kable(
+  audit_summary,
+  caption = "Table 1. Data Audit Summary",
+  align = c("l", "c")
+)
+```
+
+The dataset contains **4,431 Facebook advertisements** spanning six retail categories, two advertising formats, and two placement channels.
+
+No missing values were identified, and all variables were successfully converted to appropriate data types, providing a reliable foundation for the subsequent exploratory analysis and regression modeling.
+
+# Campaign Overview
+
+```{r}
+#| echo: false
+
+campaign_summary <- tibble(
+  Attribute = c(
+    "Placements",
+    "Ad Formats",
+    "Retail Categories",
+    "Audience Age Range"
+  ),
+  Summary = c(
+    "Desktop Feed (1,986), Mobile (2,445)",
+    "Photo Post (2,838), Link Post (1,593)",
+    "6 retail categories",
+    paste0(
+      min(facebook_clean$ageMean),
+      "–",
+      max(facebook_clean$ageMean),
+      " years"
+    )
+  )
+)
+
+knitr::kable(
+  campaign_summary,
+  caption = "Table 2. Campaign Characteristics"
+)
+```
+
+The dataset includes advertisements across multiple placements, creative formats, retail categories, and audience segments, providing sufficient diversity for comparative performance analysis.
+
+Overall, the campaigns are well distributed across formats and placement channels, providing a balanced foundation for evaluating which advertising strategies drive higher click efficiency.
+
+# Exploratory Data Analysis
+
+Before estimating regression models, exploratory analysis was conducted to understand the distribution of advertising performance and identify patterns across campaign attributes.
+
+```{r}
+ggplot(facebook_clean, aes(clickPerDollar)) +
+  geom_histogram(
+    bins = 30,
+    fill = "#4E79A7",
+    color = "white"
+  ) +
+  labs(
+    title = "Distribution of Clicks per Dollar",
+    x = "Clicks per Dollar",
+    y = "Number of Advertisements"
+  ) +
+  theme_minimal()
+```
+
+Advertising performance is approximately normally distributed without severe outliers, supporting the use of linear regression to model click efficiency.
+
+```{r}
+ggplot(
+  facebook_clean,
+  aes(
+    placement,
+    clickPerDollar,
+    fill = placement
+  )
+) +
+  geom_boxplot(show.legend = FALSE) +
+  labs(
+    title = "Advertising Performance by Placement",
+    x = "Placement",
+    y = "Clicks per Dollar"
+  ) +
+  theme_minimal()
+```
+
+Mobile advertisements consistently achieved higher click efficiency than desktop feed advertisements, suggesting that placement is an important determinant of campaign performance.
+
+```{r}
+ggplot(
+  facebook_clean,
+  aes(
+    adType,
+    clickPerDollar,
+    fill = adType
+  )
+) +
+  geom_boxplot(show.legend = FALSE) +
+  labs(
+    title = "Advertising Performance by Ad Format",
+    x = "Ad Format",
+    y = "Clicks per Dollar"
+  ) +
+  theme_minimal()
+```
+
+Photo posts generally outperformed link posts, indicating that visually rich creatives may generate stronger user engagement.
+
+```{r}
+ggplot(
+  facebook_clean,
+  aes(
+    category,
+    clickPerDollar,
+    fill = category
+  )
+) +
+  geom_boxplot(show.legend = FALSE) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(
+      angle = 30,
+      hjust = 1
+    )
+  ) +
+  labs(
+    title = "Advertising Performance Across Retail Categories",
+    x = "Retail Category",
+    y = "Clicks per Dollar"
+  )
+```
+
+Advertising effectiveness varied substantially across retail categories, suggesting that customer response depends not only on campaign execution but also on product context.
+
+# Performance Summary
+
+This section summarizes advertising performance across campaign attributes before estimating regression models.
+
+The descriptive analysis highlights which placements, ad formats, retail categories, and creative messages are associated with stronger click efficiency. These comparisons provide business context before controlling for multiple variables in the regression analysis.
+
+```{r}
+#| echo: false
+
+overall_summary <- tibble(
+  Metric = c(
+    "Average Clicks per Dollar",
+    "Median Clicks per Dollar",
+    "Standard Deviation",
+    "Average Click-Through Rate"
+  ),
+  Value = c(
+    round(mean(facebook_clean$clickPerDollar), 1),
+    round(median(facebook_clean$clickPerDollar), 1),
+    round(sd(facebook_clean$clickPerDollar), 1),
+    scales::percent(mean(facebook_clean$clickThroughRate), accuracy = 0.01)
+  )
+)
+
+knitr::kable(
+  overall_summary,
+  caption = "Table 3. Overall Advertising Performance"
+)
+```
+
+The average campaign generated **157.9 clicks per advertising dollar**, with an average click-through rate of **2.53%**, indicating substantial variation in advertising effectiveness across campaigns.
+
+```{r}
+#| echo: false
+
+placement_summary <- facebook_clean |>
+  mutate(
+    Placement = recode(
+      placement,
+      desktopfeed = "Desktop Feed",
+      mobile = "Mobile"
+    )
+  ) |>
+  group_by(Placement) |>
+  summarise(
+    `Avg. Clicks per Dollar` = round(mean(clickPerDollar), 1),
+    `Avg. CTR` = scales::percent(mean(clickThroughRate), accuracy = 0.01),
+    Advertisements = n(),
+    .groups = "drop"
+  ) |>
+  arrange(desc(`Avg. Clicks per Dollar`))
+
+knitr::kable(
+  placement_summary,
+  caption = "Table 4. Performance by Placement"
+)
+```
+
+Mobile advertisements generated substantially higher click efficiency than desktop feed advertisements, suggesting that mobile placement provides stronger advertising performance.
+
+```{r}
+#| echo: false
+
+adtype_summary <- facebook_clean |>
+  mutate(
+    `Ad Format` = adType
+  ) |>
+  group_by(`Ad Format`) |>
+  summarise(
+    `Avg. Clicks per Dollar` = round(mean(clickPerDollar), 1),
+    `Avg. CTR` = scales::percent(mean(clickThroughRate), accuracy = 0.01),
+    Advertisements = n(),
+    .groups = "drop"
+  ) |>
+  arrange(desc(`Avg. Clicks per Dollar`))
+
+knitr::kable(
+  adtype_summary,
+  caption = "Table 5. Performance by Ad Format"
+)
+```
+
+Photo posts consistently outperformed link posts in both click-through rate and click efficiency, indicating that visually rich creatives may generate stronger user engagement.
+
+```{r}
+#| echo: false
+
+category_summary <- facebook_clean |>
+  mutate(
+    `Retail Category` = recode(
+      category,
+      eCom = "eCommerce",
+      `High End` = "High-End",
+      Cosmetics = "Cosmetics",
+      Department = "Department",
+      General = "General",
+      Retailer = "Retailer"
+    )
+  ) |>
+  group_by(`Retail Category`) |>
+  summarise(
+    `Avg. Clicks per Dollar` = round(mean(clickPerDollar), 1),
+    `Avg. CTR` = scales::percent(mean(clickThroughRate), accuracy = 0.01),
+    Advertisements = n(),
+    .groups = "drop"
+  ) |>
+  arrange(desc(`Avg. Clicks per Dollar`))
+
+knitr::kable(
+  category_summary,
+  caption = "Table 6. Performance by Retail Category"
+)
+```
+
+Cosmetics achieved the highest average click efficiency, while General and eCommerce campaigns produced comparatively lower performance, suggesting that advertising effectiveness varies across product categories.
+
+Overall, the descriptive analysis identifies several campaign attributes associated with stronger advertising performance. However, these comparisons do not control for the influence of other variables. The following regression analysis estimates the independent contribution of each campaign characteristic to advertising effectiveness.
+
+# Regression Modeling
+
+Descriptive statistics provide useful comparisons across campaign attributes, but they cannot isolate the independent effect of each advertising characteristic.
+
+To better understand which factors are associated with advertising performance, a multiple linear regression model is estimated using **Clicks per Dollar** as the dependent variable.
+
+```{r}
+model_1 <- lm(
+  clickPerDollar ~
+    adType +
+    placement +
+    keywords +
+    body +
+    category +
+    ageMean,
+  data = facebook_clean
+)
+
+model1_results <- tidy(model_1)
+```
+
+```{r}
+#| echo: false
+
+model_summary <- glance(model_1) |>
+  select(
+    r.squared,
+    adj.r.squared,
+    sigma,
+    statistic,
+    p.value
+  ) |>
+  mutate(
+    across(where(is.numeric), ~ round(.x, 3))
+  ) |>
+  rename(
+    `R²` = r.squared,
+    `Adjusted R²` = adj.r.squared,
+    `Residual Std. Error` = sigma,
+    `F Statistic` = statistic,
+    `Model p-value` = p.value
+  )
+
+knitr::kable(
+  model_summary,
+  caption = "Table 7. Regression Model Summary"
+)
+```
+
+The model explains approximately **88.7%** of the variation in clicks per dollar, indicating strong explanatory power for observed campaign performance.
+
+## Significant Performance Drivers
+
+The regression results identify which campaign attributes remain statistically significant after controlling for other factors.
+
+```{r}
+#| fig-width: 8
+#| fig-height: 5
+
+significant_results <- model1_results |>
+  filter(
+    term != "(Intercept)",
+    p.value < 0.05
+  ) |>
+  mutate(
+    driver = case_when(
+      term == "placementmobile" ~ "Mobile Placement",
+      term == "adTypePhoto Post" ~ "Photo Post",
+      term == "ageMean" ~ "Audience Age",
+      term == "categoryDepartment" ~ "Department Category",
+      term == "categoryeCom" ~ "eCommerce Category",
+      term == "categoryGeneral" ~ "General Category",
+      term == "categoryHigh End" ~ "High-End Category",
+      term == "categoryRetailer" ~ "Retailer Category",
+      str_detect(term, "bodyClick") ~ "Like CTA Message",
+      str_detect(term, "bodyShare") ~ "Share CTA Message",
+      str_detect(term, "keywords#Lululemon") ~ "Lululemon Keyword",
+      TRUE ~ term
+    )
+  )
+
+ggplot(
+  significant_results,
+  aes(
+    x = estimate,
+    y = reorder(driver, estimate)
+  )
+) +
+  geom_segment(
+    aes(
+      x = 0,
+      xend = estimate,
+      y = reorder(driver, estimate),
+      yend = reorder(driver, estimate)
+    ),
+    color = "grey70"
+  ) +
+  geom_point(
+    size = 3,
+    color = "#4E79A7"
+  ) +
+  geom_vline(
+    xintercept = 0,
+    linetype = "dashed"
+  ) +
+  labs(
+    title = "Significant Drivers of Advertising Performance",
+    x = "Estimated Effect on Clicks per Dollar",
+    y = NULL
+  ) +
+  theme_minimal()
+```
+
+Mobile placement, photo-based creative formats, engagement-oriented messages, and audience age were positively associated with higher click efficiency.
+
+Several retail categories showed lower click efficiency relative to the reference category, suggesting that product context remains an important factor in advertising performance even after controlling for campaign attributes.
+
+# Interaction Analysis
+
+To explore whether audience age influences campaign performance differently across retail categories, an interaction model was estimated.
+
+```{r}
+model_2 <- lm(
+  clickPerDollar ~
+    adType +
+    placement +
+    keywords +
+    body +
+    category * ageMean,
+  data = facebook_clean
+)
+```
+
+# Model Comparison
+
+```{r}
+#| echo: false
+
+model_comparison <- bind_rows(
+  glance(model_1) |>
+    mutate(Model = "Model 1: Main Effects"),
+  glance(model_2) |>
+    mutate(Model = "Model 2: Category × Age Interaction")
+) |>
+  select(
+    Model,
+    r.squared,
+    adj.r.squared,
+    AIC,
+    BIC
+  ) |>
+  mutate(
+    across(
+      where(is.numeric),
+      ~ round(.x, 3)
+    )
+  ) |>
+  rename(
+    `R²` = r.squared,
+    `Adjusted R²` = adj.r.squared
+  )
+
+knitr::kable(
+  model_comparison,
+  caption = "Table 8. Model Comparison"
+)
+```
+
+Model 2 provides a modest improvement in adjusted R² compared with the baseline model, suggesting that the relationship between audience age and advertising performance differs somewhat across retail categories.
+
+However, because the improvement is relatively small, the main-effects model remains easier to interpret and is sufficient for deriving business recommendations.
+
+# Key Findings
+
+The analysis identified several consistent patterns associated with stronger Facebook advertising performance.
+
+1. Mobile advertisements consistently generated more clicks per advertising dollar than desktop campaigns.
+
+2. Photo posts outperformed link posts, suggesting that visual creatives attract stronger customer engagement.
+
+3. Engagement-focused messages encouraging users to "Like" the brand achieved the highest click efficiency.
+
+4. Advertising performance differed across retail categories, indicating that campaign effectiveness depends on product context.
+
+5. Audience age showed different relationships with performance across retail categories, suggesting that demographic targeting should be adjusted by campaign type.
+
+# Business Recommendations
+
+Based on the analysis, the following recommendations could improve Facebook advertising performance.
+
+1. Allocate more advertising budget to mobile placements, where campaigns consistently generated higher click efficiency.
+
+2. Use photo-based creatives whenever appropriate, as they outperformed link posts across both click-through rate and clicks per dollar.
+
+3. Continue testing engagement-focused messages, especially calls-to-action encouraging users to interact with the brand.
+
+4. Tailor campaign strategy by retail category instead of using the same creative approach across all products.
+
+5. Consider audience age when defining targeting strategies, since its relationship with performance varies across retail categories.
