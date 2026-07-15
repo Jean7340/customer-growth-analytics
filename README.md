@@ -83,6 +83,3 @@ customer-growth-analytics/
 ├── output/      # Rendered HTML reports
 └── README.md
 ```
-
-Analysis notebooks, figures, and generated reports are organized separately for reproducibility and easier navigation.
-```
