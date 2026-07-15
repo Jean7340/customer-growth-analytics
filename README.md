@@ -4,6 +4,8 @@ Three business analytics case studies answering the questions every marketing or
 
 Together, the projects cover the full analytics spectrum — descriptive analysis, causal inference, and predictive modeling — and show how each translates into a concrete business decision.
 
+---
+
 ## What This Repository Demonstrates
 
 | Capability | How It Shows Up Here |
@@ -20,6 +22,8 @@ Together, the projects cover the full analytics spectrum — descriptive analysi
 | Advertising Performance Analysis | Which advertising strategies drive better campaign performance? | EDA, Multiple Linear Regression | Mobile placement associated with **+34.6 clicks per ad dollar** after controlling for other attributes | [View Report](#) |
 | Marketing Incrementality | Did the campaign generate incremental sales? | Geo Experiment, Difference-in-Differences | **No significant lift detected** (p = 0.845) — recommended against scaling | [View Report](#) |
 | Customer Response Prediction | Which customers are most likely to respond? | Logistic Regression, Decile Ranking, Targeting Simulation | **2.3× more expected responses** than random targeting at the same budget | [View Report](#) |
+
+---
 
 ## Featured Projects
 
@@ -54,6 +58,8 @@ A bank wanted to improve the efficiency of its telemarketing campaigns. Using 41
        alt="Campaign Targeting Simulation"
        width="900">
 </p>
+
+---
 
 ## Analytics Workflow
 
