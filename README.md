@@ -19,9 +19,9 @@ Together, the projects cover the full analytics spectrum — descriptive analysi
 
 | Project | Business Question | Methods | Key Result | Report |
 |---|---|---|---|---|
-| Advertising Performance Analysis | Which advertising strategies drive better campaign performance? | EDA, Multiple Linear Regression | Mobile placement associated with **+34.6 clicks per ad dollar** after controlling for other attributes | [View Report](#) |
-| Marketing Incrementality | Did the campaign generate incremental sales? | Geo Experiment, Difference-in-Differences | **No significant lift detected** (p = 0.845) — recommended against scaling | [View Report](#) |
-| Customer Response Prediction | Which customers are most likely to respond? | Logistic Regression, Decile Ranking, Targeting Simulation | **2.3× more expected responses** than random targeting at the same budget | [View Report](#) |
+| Advertising Performance Analysis | Which advertising strategies drive better campaign performance? | EDA, Multiple Linear Regression | Mobile placement associated with **+34.6 clicks per ad dollar** after controlling for other attributes | [View Report](https://jean7340.github.io/customer-growth-analytics/output/01_facebook_advertising_performance_analysis.html) |
+| Marketing Incrementality | Did the campaign generate incremental sales? | Geo Experiment, Difference-in-Differences | **No significant lift detected** (p = 0.845) — recommended against scaling | [View Report](https://jean7340.github.io/customer-growth-analytics/output/02_marketing_incrementality.html) |
+| Customer Response Prediction | Which customers are most likely to respond? | Logistic Regression, Decile Ranking, Targeting Simulation | **2.3× more expected responses** than random targeting at the same budget | [View Report](https://jean7340.github.io/customer-growth-analytics/output/03_customer_response_prediction.html) |
 
 ---
 
